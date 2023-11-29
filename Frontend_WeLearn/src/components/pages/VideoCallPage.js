@@ -18,6 +18,9 @@ function VideoCallPage() {
     
     const [MuteMicrophone, setMuteMicrophone] = useState(true);
     const [CameraOff, setCameraOff] = useState(true);
+    const [peerId, setPeerId] = useState('');
+    const [targetPeerId, setTargetPeerId] = useState('');
+    const [userInfo, setUserInfo] = useState({});
 
     const MicrophoneToggle = () => {
         setMuteMicrophone((prev) => !prev);
@@ -38,21 +41,18 @@ function VideoCallPage() {
             track.enabled = !CameraOff; });
       };
 
-    let [peerId, setPeerId] = useState('');
-    let [targetPeerId, setTargetPeerId] = useState('');
-
-const localVideoRef = useRef(null);
-const remoteVideoRef = useRef(null);
-const peerRef = useRef(null);
+        const localVideoRef = useRef(null);
+        const remoteVideoRef = useRef(null);
+        const peerRef = useRef(null);
 
 
 
-    const handleIncomingCall = (call) => {
-        call.answer(localVideoRef.current.srcObject);
+        const handleIncomingCall = (call) => {
+            call.answer(localVideoRef.current.srcObject);
 
-        call.on('stream', (remoteStream) => {
-          remoteVideoRef.current.srcObject = remoteStream;
-        });
+            call.on('stream', (remoteStream) => {
+            remoteVideoRef.current.srcObject = remoteStream;
+            });
     };
 
     const callPeer = () => {
@@ -60,12 +60,35 @@ const peerRef = useRef(null);
             alert("Please, enter valid target peer id.")
         }
 
-        let call = peerRef.current.call(targetPeerId, localVideoRef.current.srcObject);
+        const call = peerRef.current.call(targetPeerId, localVideoRef.current.srcObject);
 
         call.on('stream', function(remoteStream) {
             remoteVideoRef.current.srcObject = remoteStream;
         });
     }
+
+    const fetchUserInfo = async () => {
+        try {
+            const token = localStorage.getItem('token'); 
+            const response = await fetch('http://localhost:8000/peer/', { 
+                method: 'GET',
+                headers: {
+                    'Authorization': `Token ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+    
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+    
+            const data = await response.json();
+            setUserInfo(data); 
+            
+        } catch (error) {
+            console.error('Error fetching user information:', error);
+        }
+    };
 
     const initializePeer = async () => {
         const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -74,8 +97,21 @@ const peerRef = useRef(null);
 
         peerRef.current = new Peer();
 
-        peerRef.current.on('open', (id) => {
+        peerRef.current.on('open', async (id) => {
             setPeerId(id);
+            try {
+                const token = localStorage.getItem('token'); // Retrieve the stored token
+                await fetch('http://localhost:8000/peer/', { 
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Token ${token}` // If you are using token-based authentication
+                    },
+                    body: JSON.stringify({ peerId: id })
+                });
+            } catch (error) {
+                console.error('Error sending peer ID to backend:', error);
+            }
         });
 
         peerRef.current.on('call', handleIncomingCall);
@@ -83,8 +119,9 @@ const peerRef = useRef(null);
     };
 
     useEffect(() => {
+        fetchUserInfo();
         initializePeer();
-      
+
         return () => {
           if (peerRef.current) {
             peerRef.current.disconnect();
@@ -112,8 +149,8 @@ const peerRef = useRef(null);
 
                 <div>
                     <div>Your Peer ID: {peerId}</div>
-                    <div>Language: {}</div>
-                    <div>Name: {}</div>
+                    <div>Language: {userInfo.name}</div>
+                    <div>Name: {userInfo.known_lang}</div>
                     <div>
                         <input value={targetPeerId} onChange={(e) => setTargetPeerId(e.target.value)}/>
                         <button className={styles.startCallBtn} onClick={callPeer}>Call</button>
@@ -128,8 +165,8 @@ const peerRef = useRef(null);
                 </a>
                 <a href="#" onClick={MicrophoneToggle}>
                     {MuteMicrophone ? 
-                        (<img src={microOff} alt="Microphone Off" />) 
-                        : (<img src={microOn} alt="Microphone On"/>)
+                        (<img src={microOn} alt="Microphone On" />) 
+                        : (<img src={microOff} alt="Microphone Off"/>)
                     }
                 </a>
                 <a href="#" onClick={CameraToggle}>
@@ -138,7 +175,7 @@ const peerRef = useRef(null);
                         : (<img src={cameraOff} alt="Camera Off"/>)
                     }
                 </a>
-                <a href="#">
+                <a href="#" onClick={initializePeer}>
                     <img src={next} alt="Next Logo" />
                 </a>
             </div>
