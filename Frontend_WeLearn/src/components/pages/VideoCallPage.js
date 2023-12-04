@@ -20,7 +20,6 @@ function VideoCallPage() {
     const [CameraOff, setCameraOff] = useState(true);
     const [peerId, setPeerId] = useState('');
     const [targetPeerId, setTargetPeerId] = useState('');
-    const [userInfo, setUserInfo] = useState({});
 
     const MicrophoneToggle = () => {
         setMuteMicrophone((prev) => !prev);
@@ -67,59 +66,84 @@ function VideoCallPage() {
         });
     }
 
-    const fetchUserInfo = async () => {
-        try {
-            const token = localStorage.getItem('token'); 
-            const response = await fetch('http://localhost:8000/peer/', { 
-                method: 'GET',
-                headers: {
-                    'Authorization': `Token ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-    
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-    
-            const data = await response.json();
-            setUserInfo(data); 
-            
-        } catch (error) {
-            console.error('Error fetching user information:', error);
+    const pingPeer = async (peerId) => {
+      try {
+          const token = localStorage.getItem('token');
+          const response = await fetch(`http://localhost:8000/ping_peer/${peerId}/`, {
+              method: 'POST',
+              headers: {
+                  'Authorization': `Token ${token}`,
+              },
+          });
+  
+          if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+          }
+  
+          const responseData = await response.json();
+          return responseData.last_time_pinged;
+          } 
+      catch (error) {
+        console.error('Error pinging peer:', error);
+        return null;
         }
     };
-
+  
     const initializePeer = async () => {
-        const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        try {
+          const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+          localVideoRef.current.srcObject = localStream;
+      
+          peerRef.current = new Peer();
+          const userData = localStorage.getItem('userData')
+          console.log('userData:', userData); 
 
-        localVideoRef.current.srcObject = localStream;
 
-        peerRef.current = new Peer();
-
-        peerRef.current.on('open', async (id) => {
+          peerRef.current.on('open', async (id) => {
             setPeerId(id);
-            try {
-                const token = localStorage.getItem('token'); // Retrieve the stored token
-                await fetch('http://localhost:8000/peer/', { 
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Token ${token}` // If you are using token-based authentication
-                    },
-                    body: JSON.stringify({ peerId: id })
-                });
-            } catch (error) {
-                console.error('Error sending peer ID to backend:', error);
+            const lastTimePinged = await pingPeer(id);
+            if (lastTimePinged === null) {
+                console.error('Failed to get last time pinged');
+                return;
             }
-        });
-
-        peerRef.current.on('call', handleIncomingCall);
-        // Connect to signaling server or perform other setup if needed
-    };
+            const payload = {
+              desired_lang: userData.desired_lang,
+              known_lang: userData.known_lang,
+              last_time_pinged: lastTimePinged
+            };
+            const token = localStorage.getItem('token');
+      
+            try {
+              const response = await fetch('http://localhost:8000/peer/', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Token ${token}`,
+                },
+                body: JSON.stringify(payload),
+              });
+      
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+      
+              const responseData = await response.json();
+              console.log('User data sent successfully:', responseData);
+      
+              setTargetPeerId(responseData.peer_Id);
+      
+              peerRef.current.on('call', handleIncomingCall);
+              // Connect to signaling server or perform other setup if needed
+            } catch (error) {
+              console.error('Error sending user data to the backend:', error);
+            }
+          });
+        } catch (error) {
+          console.error('Error accessing media devices:', error);
+        }
+      };
 
     useEffect(() => {
-        fetchUserInfo();
         initializePeer();
 
         return () => {
@@ -149,8 +173,8 @@ function VideoCallPage() {
 
                 <div>
                     <div>Your Peer ID: {peerId}</div>
-                    <div>Language: {userInfo.name}</div>
-                    <div>Name: {userInfo.known_lang}</div>
+                    <div>Language: {}</div>
+                    <div>Name: {}</div>
                     <div>
                         <input value={targetPeerId} onChange={(e) => setTargetPeerId(e.target.value)}/>
                         <button className={styles.startCallBtn} onClick={callPeer}>Call</button>

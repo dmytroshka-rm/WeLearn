@@ -67,7 +67,7 @@ def ping_peer(request, id):
 
     peer.last_time_pinged = timezone.now()
     peer.save()
-    return Response({"detail": "Peer pinged successfully"}, status=status.HTTP_200_OK)
+    return Response({"detail": "Peer pinged successfully", "last_time_pinged": peer.last_time_pinged}, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
