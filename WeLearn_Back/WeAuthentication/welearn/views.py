@@ -74,3 +74,10 @@ def ping_peer(request, id):
 @permission_classes([IsAuthenticated])
 def test_token(request):
     return Response("passed!")
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_user_id(request):
+    user = request.user
+    return Response({"user_id": user.id})

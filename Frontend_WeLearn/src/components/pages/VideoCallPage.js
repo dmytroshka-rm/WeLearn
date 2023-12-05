@@ -66,10 +66,10 @@ function VideoCallPage() {
         });
     }
 
-    const pingPeer = async (peerId) => {
+    const pingPeer = async (userId) => {
       try {
           const token = localStorage.getItem('token');
-          const response = await fetch(`http://localhost:8000/ping_peer/${peerId}/`, {
+          const response = await fetch(`http://localhost:8000/ping_peer/${userId}/`, {
               method: 'POST',
               headers: {
                   'Authorization': `Token ${token}`,
@@ -88,30 +88,54 @@ function VideoCallPage() {
         return null;
         }
     };
+
+    const fetchUserId = async () => {
+    try {
+        const token = localStorage.getItem('token'); // Retrieve the token stored in localStorage
+        const response = await fetch('http://localhost:8000/get_user_id/', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Token ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.user_id; // This will be the user's ID
+    } catch (error) {
+        console.error('Error fetching user ID:', error);
+        return null;
+    }
+};
+
   
     const initializePeer = async () => {
         try {
           const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
           localVideoRef.current.srcObject = localStream;
-      
-          peerRef.current = new Peer();
-          const userData = localStorage.getItem('userData')
-          console.log('userData:', userData); 
+          let lastTimePinged;
+          const userId = await fetchUserId();
+          if (userId !== null) {
+          lastTimePinged = await pingPeer(userId);
+          } else {
+            throw new Error(`Fetching ID Failed;(`);
+          }
+            peerRef.current = new Peer();
+            const userData = localStorage.getItem('userData')
+            console.log('userData:', userData); 
 
 
-          peerRef.current.on('open', async (id) => {
-            setPeerId(id);
-            const lastTimePinged = await pingPeer(id);
-            if (lastTimePinged === null) {
-                console.error('Failed to get last time pinged');
-                return;
-            }
-            const payload = {
-              desired_lang: userData.desired_lang,
-              known_lang: userData.known_lang,
-              last_time_pinged: lastTimePinged
-            };
-            const token = localStorage.getItem('token');
+            peerRef.current.on('open', async (id) => {
+              setPeerId(id);
+              const payload = {
+                desired_lang: userData.desired_lang,
+                known_lang: userData.known_lang,
+                last_time_pinged: lastTimePinged
+               };
+              const token = localStorage.getItem('token');
       
             try {
               const response = await fetch('http://localhost:8000/peer/', {
