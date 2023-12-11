@@ -11,7 +11,7 @@ class Languages(models.Model):
     desired_language = models.CharField(max_length=50)
 
     def __str__(self):
-        return str(self.user.username)
+        return self.known_language + self.desired_language
 
 class Peer(models.Model ):
     user = models.OneToOneField(

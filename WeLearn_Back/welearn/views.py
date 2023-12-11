@@ -56,12 +56,14 @@ def get_user(request, id):
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def peer(request):
+    print('\n\n\n=======hello')
+    print(request.user.languages)
     existing_peer = Peer.objects.filter(
-        known_lang=request.user.languages.desired_language,
-        desired_lang=request.user.languages.known_language,
+        user__languages__known_lang=request.user.languages.desired_language,
+        user__languages__desired_lang=request.user.languages.known_language,
         last_time_pinged__gte=datetime.now() - timedelta(minutes=1),
         in_call=False).first()
-
+    print(existing_peer)
     if existing_peer:
         existing_peer_serializers = PeerSerializer(existing_peer)
         existing_peer.in_call = True
