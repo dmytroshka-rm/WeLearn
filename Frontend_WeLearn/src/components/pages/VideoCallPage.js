@@ -137,7 +137,7 @@ const peerRef = useRef(null);
         <div className={styles.bottomToolbar}>
             <div className={styles.centerContainer}>
                 <a href="#">
-                    <img src={setting1} alt="Setting1 Logo"/>
+                <img src={setting1} alt="Setting1 Logo" className={styles.setting} />
                 </a>
                 <a href="#" onClick={MicrophoneToggle}>
                     {MuteMicrophone ? 
