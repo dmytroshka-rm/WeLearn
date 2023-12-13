@@ -4,7 +4,7 @@ import Header from '../common/Header';
 import Support from '../common/Support';
 import './style.css';
 import './start.css';
-import settingLogo from './settingLogo.png';
+
 
 function StartPage() {
   const navigate = useNavigate();
@@ -40,11 +40,6 @@ function StartPage() {
   return (
     <div>
       <Header />
-      <div className='setting'>
-        <a href="#">
-          <img src={settingLogo} alt="Setting Logo" />
-        </a>
-      </div>
       <div className="container flex">
         <div className="page flex">
           <div className="post">

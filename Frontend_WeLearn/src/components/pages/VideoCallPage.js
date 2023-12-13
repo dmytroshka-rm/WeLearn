@@ -6,7 +6,6 @@ import Support from '../common/Support';
 import cameraOn from './cameraOn.png';
 import cameraOff from './cameraOff.png';
 import next from './next.png';
-import setting1 from './setting1.png';
 import microOn from './microOn.png';
 import microOff from './microOff.png';
 
@@ -136,9 +135,6 @@ const peerRef = useRef(null);
         </div>
         <div className={styles.bottomToolbar}>
             <div className={styles.centerContainer}>
-                <a href="#">
-                <img src={setting1} alt="Setting1 Logo" className={styles.setting} />
-                </a>
                 <a href="#" onClick={MicrophoneToggle}>
                     {MuteMicrophone ? 
                         (<img src={microOff} alt="Microphone Off" />) 

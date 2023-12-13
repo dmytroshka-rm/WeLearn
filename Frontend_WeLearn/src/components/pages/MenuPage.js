@@ -4,7 +4,6 @@ import Header from '../common/Header';
 import Support from '../common/Support';
 import './style.css';
 import './menu.css';
-import settingLogo from './settingLogo.png';
 import userIcon from './userIcon.png';
 import { useNavigate } from 'react-router-dom';
 
@@ -56,11 +55,6 @@ function MenuPage() {
   return (
     <div>
       <Header />
-      <div className='setting'>
-        <a href="#">
-          <img src={settingLogo} alt="Setting Logo" />
-        </a>
-      </div>
       <div className="box flex">
         <div className="user-info">
           <img className="user-icon" src={userIcon} alt="User Icon" />
